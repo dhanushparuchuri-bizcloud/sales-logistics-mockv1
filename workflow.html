@@ -1,0 +1,1077 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ICAT Ops Workflow & Pain Map</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;900&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ink: #0a0a0a;
+      --ink-soft: #2a2a2a;
+      --muted: #6a6a6a;
+      --muted-2: #9a9a9a;
+      --rule: #e5e5e5;
+      --rule-strong: #cfcfcf;
+      --bg: #fafaf9;
+      --card: #ffffff;
+      --red: #c8281c;
+      --red-soft: #fdeceb;
+      --amber: #b76e00;
+      --amber-soft: #fdf3e1;
+      --amber-tint: #fffaf0;
+      --blue: #1957d6;
+      --blue-soft: #ecf1fd;
+      --blue-tint: #f5f8fe;
+      --green: #157a3a;
+      --green-soft: #e7f3ec;
+      --grey: #767676;
+      --grey-soft: #f0f0ef;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Geist', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      margin: 0;
+      padding: 40px 24px 80px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+    .wrap { max-width: 1280px; margin: 0 auto; }
+
+    /* Header */
+    .header { margin-bottom: 28px; }
+    .header h1 {
+      font-size: 32px;
+      font-weight: 700;
+      margin: 0 0 8px;
+      letter-spacing: -0.5px;
+    }
+    .header .sub {
+      color: var(--muted);
+      font-size: 13px;
+      font-family: 'Geist Mono', monospace;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* Legend */
+    .legend {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+    .legend-box {
+      padding: 14px 18px;
+      background: var(--card);
+      border: 1px solid var(--rule);
+      border-radius: 8px;
+      font-size: 13px;
+    }
+    .legend-box strong {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--muted);
+      margin-right: 10px;
+      display: block;
+      margin-bottom: 6px;
+    }
+    .legend-row {
+      display: flex;
+      gap: 18px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .sev {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+    }
+    .sev .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+    .sev .dot.crit { background: var(--red); }
+    .sev .dot.high { background: var(--amber); }
+    .sev .dot.med  { background: var(--blue); }
+    .sev .dot.low  { background: var(--grey); }
+    .chan {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+    }
+    .chan .swatch {
+      width: 16px;
+      height: 16px;
+      border-radius: 4px;
+      display: inline-block;
+    }
+    .chan .swatch.portal { background: var(--blue-tint); border: 2px solid var(--blue); }
+    .chan .swatch.email  { background: var(--amber-tint); border: 2px solid var(--amber); }
+
+    /* Section banner for dual-track intro */
+    .section-band {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin: 24px 0 16px;
+      padding: 14px 18px;
+      background: var(--ink);
+      color: #fff;
+      border-radius: 8px;
+    }
+    .section-band .icon {
+      font-family: 'Geist Mono', monospace;
+      font-weight: 600;
+      font-size: 11px;
+      background: rgba(255,255,255,0.15);
+      padding: 4px 10px;
+      border-radius: 4px;
+      letter-spacing: 0.5px;
+    }
+    .section-band .lab {
+      font-size: 14px;
+      font-weight: 500;
+    }
+    .section-band .sub {
+      margin-left: auto;
+      font-size: 12px;
+      color: rgba(255,255,255,0.65);
+      font-family: 'Geist Mono', monospace;
+    }
+
+    /* Pipeline base */
+    .pipeline { position: relative; }
+
+    /* Stage row — used in single-lane mode */
+    .stage-row {
+      display: grid;
+      grid-template-columns: 70px 1fr 420px;
+      gap: 20px;
+      margin-bottom: 20px;
+      align-items: stretch;
+    }
+
+    /* Stage number column */
+    .stage-num {
+      font-family: 'Geist Mono', monospace;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding-top: 22px;
+      position: relative;
+    }
+    .stage-num::before {
+      content: '';
+      position: absolute;
+      left: 18px;
+      top: 48px;
+      bottom: -20px;
+      width: 2px;
+      background: var(--rule);
+    }
+    .stage-row:last-child .stage-num::before,
+    .dual-row:last-child .stage-num::before { display: none; }
+    .stage-num .dot {
+      position: absolute;
+      left: 12px;
+      top: 24px;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--ink);
+      border: 3px solid var(--bg);
+      z-index: 2;
+    }
+    .stage-num.oob .dot { background: var(--muted-2); }
+    .stage-num .lbl { padding-left: 32px; display: block; }
+
+    /* Stage card */
+    .stage-card {
+      background: var(--card);
+      border: 1px solid var(--rule);
+      border-radius: 10px;
+      padding: 18px 20px;
+    }
+    .stage-card.oob {
+      background: var(--grey-soft);
+      border-style: dashed;
+    }
+    .stage-card h2 {
+      font-size: 16px;
+      font-weight: 600;
+      margin: 0 0 6px;
+      letter-spacing: -0.2px;
+    }
+    .stage-card .desc {
+      font-size: 14px;
+      color: var(--ink-soft);
+      margin: 0;
+    }
+    .stage-card .desc strong { color: var(--ink); font-weight: 600; }
+    .stage-card .meta {
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid var(--rule);
+      font-size: 12.5px;
+      color: var(--muted);
+      font-family: 'Geist Mono', monospace;
+    }
+    .stage-card .quirk {
+      margin-top: 12px;
+      padding: 10px 12px;
+      background: var(--amber-soft);
+      border-left: 3px solid var(--amber);
+      border-radius: 0 6px 6px 0;
+      font-size: 13px;
+      color: var(--ink-soft);
+    }
+    .stage-card .quirk strong { color: var(--amber); }
+    .stage-card .channel-note {
+      margin-top: 10px;
+      padding: 8px 12px;
+      background: var(--blue-soft);
+      border-left: 3px solid var(--blue);
+      border-radius: 0 6px 6px 0;
+      font-size: 12.5px;
+      color: var(--ink-soft);
+    }
+    .stage-card .channel-note strong { color: var(--blue); }
+
+    /* Branches */
+    .branches {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
+      flex-wrap: wrap;
+    }
+    .branch {
+      padding: 4px 10px;
+      background: var(--blue-soft);
+      color: var(--blue);
+      border-radius: 4px;
+      font-size: 12px;
+      font-family: 'Geist Mono', monospace;
+      font-weight: 500;
+    }
+    .branch.win { background: var(--green-soft); color: var(--green); }
+    .branch.bad { background: var(--red-soft); color: var(--red); }
+
+    /* Pain badges */
+    .pains {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .pain {
+      background: var(--card);
+      border: 1px solid var(--rule);
+      border-left-width: 4px;
+      border-radius: 6px;
+      padding: 9px 12px;
+      font-size: 13px;
+      display: grid;
+      grid-template-columns: 38px 1fr;
+      gap: 10px;
+      align-items: start;
+    }
+    .pain .id {
+      font-family: 'Geist Mono', monospace;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--muted);
+      padding-top: 1px;
+    }
+    .pain .body { line-height: 1.4; }
+    .pain .body strong { display: block; font-weight: 600; color: var(--ink); font-size: 12.5px; }
+    .pain .body .who {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 2px;
+      font-family: 'Geist Mono', monospace;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+    .pain.crit { border-left-color: var(--red); background: linear-gradient(to right, var(--red-soft) 0%, var(--card) 40%); }
+    .pain.crit .id { color: var(--red); }
+    .pain.high { border-left-color: var(--amber); }
+    .pain.high .id { color: var(--amber); }
+    .pain.med  { border-left-color: var(--blue); }
+    .pain.med  .id { color: var(--blue); }
+    .pain.low  { border-left-color: var(--grey); }
+    .pain.green { border-left-color: var(--green); background: linear-gradient(to right, var(--green-soft) 0%, var(--card) 40%); }
+    .pain.green .id { color: var(--green); }
+    .pain.green .body strong { color: var(--green); }
+
+    /* DUAL ROW — for stages 0–2 with two lanes */
+    .dual-row {
+      display: grid;
+      grid-template-columns: 70px 1fr;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+    .dual-lanes {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      position: relative;
+    }
+    .dual-lanes::before {
+      content: 'OR';
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      background: var(--bg);
+      color: var(--muted);
+      padding: 4px 8px;
+      border-radius: 12px;
+      font-family: 'Geist Mono', monospace;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      border: 1px solid var(--rule-strong);
+      z-index: 1;
+    }
+    .lane {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .lane-header {
+      font-family: 'Geist Mono', monospace;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      padding: 8px 12px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .lane-header .ico {
+      font-size: 14px;
+    }
+    .lane--portal .lane-header {
+      background: var(--blue-soft);
+      color: var(--blue);
+      border-left: 4px solid var(--blue);
+    }
+    .lane--email .lane-header {
+      background: var(--amber-soft);
+      color: var(--amber);
+      border-left: 4px solid var(--amber);
+    }
+    .lane--portal .stage-card {
+      background: var(--blue-tint);
+      border-color: #d8e3f8;
+    }
+    .lane--email .stage-card {
+      background: var(--amber-tint);
+      border-color: #f5e7c8;
+    }
+    .lane .pains { margin-top: 4px; }
+
+    /* MERGE BAND */
+    .merge-band {
+      display: grid;
+      grid-template-columns: 70px 1fr;
+      gap: 20px;
+      margin: 8px 0 24px;
+      align-items: center;
+    }
+    .merge-band-num {
+      position: relative;
+    }
+    .merge-band-num::before {
+      content: '';
+      position: absolute;
+      left: 18px;
+      top: -20px;
+      bottom: -20px;
+      width: 2px;
+      background: var(--rule);
+    }
+    .merge-graphic {
+      position: relative;
+      padding: 16px 24px;
+      background: var(--ink);
+      color: #fff;
+      border-radius: 10px;
+      display: grid;
+      grid-template-columns: 200px 1fr;
+      gap: 24px;
+      align-items: center;
+    }
+    .merge-graphic svg {
+      width: 100%;
+      height: 60px;
+    }
+    .merge-graphic .label {
+      font-size: 14px;
+    }
+    .merge-graphic .label strong {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 4px;
+      font-size: 15px;
+    }
+    .merge-graphic .label .sub {
+      font-size: 12px;
+      color: rgba(255,255,255,0.65);
+      font-family: 'Geist Mono', monospace;
+    }
+
+    /* Common-pipeline label */
+    .common-label {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 8px 0 16px;
+      padding: 10px 18px 10px 90px;
+      font-family: 'Geist Mono', monospace;
+      font-size: 11px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-weight: 600;
+    }
+    .common-label::before {
+      content: '';
+      flex: 0 0 32px;
+      height: 1px;
+      background: var(--rule-strong);
+    }
+    .common-label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--rule);
+    }
+
+    /* Headline pains panel */
+    .headline {
+      margin-top: 40px;
+      padding: 28px 32px;
+      background: var(--card);
+      border: 1px solid var(--rule);
+      border-radius: 12px;
+    }
+    .headline h2 {
+      margin: 0 0 6px;
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+    }
+    .headline .lede {
+      color: var(--muted);
+      font-size: 14px;
+      margin-bottom: 24px;
+    }
+    .headline-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+    }
+    .headline-pain {
+      padding: 16px 18px;
+      border: 1px solid var(--rule);
+      border-radius: 8px;
+      background: var(--bg);
+    }
+    .headline-pain .id {
+      font-family: 'Geist Mono', monospace;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--red);
+      letter-spacing: 0.5px;
+    }
+    .headline-pain .title {
+      font-weight: 600;
+      font-size: 15px;
+      margin: 4px 0 8px;
+    }
+    .headline-pain .quote {
+      font-size: 13px;
+      color: var(--ink-soft);
+      font-style: italic;
+      padding-left: 10px;
+      border-left: 2px solid var(--rule);
+    }
+    .headline-pain .fix {
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px dashed var(--rule);
+      font-size: 12.5px;
+      color: var(--muted);
+    }
+    .headline-pain .fix strong {
+      color: var(--blue);
+      font-family: 'Geist Mono', monospace;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* MVP filter */
+    .filter {
+      margin-top: 24px;
+      padding: 24px 28px;
+      background: var(--ink);
+      color: #fff;
+      border-radius: 12px;
+    }
+    .filter h2 {
+      margin: 0 0 4px;
+      font-size: 18px;
+      font-weight: 600;
+    }
+    .filter .lede {
+      color: rgba(255,255,255,0.7);
+      font-size: 13px;
+      margin-bottom: 18px;
+    }
+    .filter-list {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .filter-row {
+      display: grid;
+      grid-template-columns: 50px 1fr 200px;
+      gap: 12px;
+      align-items: baseline;
+      font-size: 13px;
+      padding: 10px 14px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 6px;
+    }
+    .filter-row .pid {
+      font-family: 'Geist Mono', monospace;
+      font-size: 11px;
+      color: rgba(255,255,255,0.6);
+    }
+    .filter-row .pain-name { font-weight: 500; }
+    .filter-row .channel {
+      font-size: 10px;
+      font-family: 'Geist Mono', monospace;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      text-align: right;
+    }
+    .filter-row .channel .both { color: #8bf0a8; }
+    .filter-row .channel .email-only { color: #f5c477; }
+    .filter-row .channel .portal-only { color: #6db5ff; }
+
+    /* Net-new opportunities */
+    .opps {
+      margin-top: 24px;
+      padding: 24px 28px;
+      background: var(--green-soft);
+      border: 1px solid #c4e3cf;
+      border-radius: 12px;
+    }
+    .opps h2 {
+      margin: 0 0 4px;
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--green);
+    }
+    .opps .lede {
+      color: var(--ink-soft);
+      font-size: 13px;
+      margin-bottom: 16px;
+    }
+    .opps-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .opp {
+      padding: 12px 14px;
+      background: #fff;
+      border: 1px solid #d4e9dc;
+      border-radius: 6px;
+      font-size: 13px;
+    }
+    .opp .pid {
+      font-family: 'Geist Mono', monospace;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--green);
+      letter-spacing: 0.5px;
+    }
+    .opp .title { font-weight: 600; margin-top: 2px; }
+    .opp .desc { color: var(--muted); margin-top: 4px; font-size: 12.5px; }
+
+    @media (max-width: 1100px) {
+      .stage-row { grid-template-columns: 70px 1fr; }
+      .stage-row .pains { grid-column: 2 / 3; padding-left: 0; margin-top: 4px; }
+      .dual-lanes { grid-template-columns: 1fr; }
+      .dual-lanes::before { left: 20px; transform: translateY(-50%); }
+      .lane:not(:last-child) { padding-bottom: 24px; }
+      .merge-graphic { grid-template-columns: 1fr; }
+      .merge-graphic svg { display: none; }
+      .headline-grid, .filter-list, .opps-grid { grid-template-columns: 1fr; }
+      .filter-row { grid-template-columns: 40px 1fr; }
+      .filter-row .channel { grid-column: 1 / -1; text-align: left; padding-left: 52px; }
+      .legend { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+
+    <div class="header">
+      <h1>ICAT Ops Workflow &amp; Pain Map</h1>
+      <div class="sub">Two intake channels · one resolution pipeline · 20 pain points · 4 headline pains</div>
+    </div>
+
+    <div class="legend">
+      <div class="legend-box">
+        <strong>Severity</strong>
+        <div class="legend-row">
+          <span class="sev"><span class="dot crit"></span> Very High (headline pain)</span>
+          <span class="sev"><span class="dot high"></span> High</span>
+          <span class="sev"><span class="dot med"></span> Medium</span>
+          <span class="sev"><span class="dot low"></span> Low</span>
+        </div>
+      </div>
+      <div class="legend-box">
+        <strong>Intake Channel</strong>
+        <div class="legend-row">
+          <span class="chan"><span class="swatch portal"></span> Portal — Vantage self-service</span>
+          <span class="chan"><span class="swatch email"></span> Email — direct to Ops agent</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section band -->
+    <div class="section-band">
+      <span class="icon">STAGES 0–2</span>
+      <span class="lab">Two channels run in parallel. The customer takes ONE of these paths.</span>
+      <span class="sub">Different signals, different pains</span>
+    </div>
+
+    <div class="pipeline">
+
+      <!-- STAGE 0 — DUAL -->
+      <div class="dual-row">
+        <div class="stage-num"><span class="dot"></span><span class="lbl">Stage 0</span></div>
+        <div class="dual-lanes">
+
+          <div class="lane lane--portal">
+            <div class="lane-header"><span class="ico">▦</span> Portal Arrival</div>
+            <div class="stage-card">
+              <h2>Customer self-serves</h2>
+              <p class="desc">Customer logs into <strong>Vantage Portal</strong>, fills out a structured form (Account, Mode, Service Level, Lines with Qty/Type/Weight/Dims, Hazmat).</p>
+              <div class="meta">Currently: bookings only · soon: quoting too · NO email thread</div>
+            </div>
+            <div class="pains">
+              <div class="pain low">
+                <div class="id">P18</div>
+                <div class="body"><strong>Some accounts skip quote step entirely (direct book)</strong><div class="who">Don't shoehorn UI</div></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="lane lane--email">
+            <div class="lane-header"><span class="ico">✉</span> Email Arrival</div>
+            <div class="stage-card">
+              <h2>Customer emails Ops</h2>
+              <p class="desc">Customer emails a vague request: <em>"Need to ship X pallet, A→B next week."</em></p>
+              <div class="meta">90% of all quote intake · sometimes phone</div>
+            </div>
+            <div class="pains">
+              <!-- no critical pains at this stage for email -->
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- STAGE 1 — DUAL -->
+      <div class="dual-row">
+        <div class="stage-num"><span class="dot"></span><span class="lbl">Stage 1</span></div>
+        <div class="dual-lanes">
+
+          <div class="lane lane--portal">
+            <div class="lane-header"><span class="ico">▦</span> Portal Triage</div>
+            <div class="stage-card">
+              <h2>Auto-identified by login</h2>
+              <p class="desc">Customer is already known by portal credentials. Account + contact are auto-attached. Submission lands in a queue / triggers a notification to Ops.</p>
+              <div class="channel-note"><strong>Portal-only signal:</strong> If a customer starts the form but never submits, that's a <em>net-new</em> signal nobody has today.</div>
+            </div>
+            <div class="pains">
+              <div class="pain med">
+                <div class="id">P19</div>
+                <div class="body"><strong>Form abandonment — customer started, dropped off</strong><div class="who">Sales · net-new opportunity</div></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="lane lane--email">
+            <div class="lane-header"><span class="ico">✉</span> Email Triage</div>
+            <div class="stage-card">
+              <h2>Ops identifies by domain</h2>
+              <p class="desc">Op opens inbox → matches domain → routes.</p>
+              <div class="branches">
+                <span class="branch">NEW → engage Sales to sign</span>
+                <span class="branch">EXISTING → quote ASAP</span>
+              </div>
+              <div class="meta">If op isn't online, request sits unread until they look</div>
+            </div>
+            <div class="pains">
+              <div class="pain med">
+                <div class="id">P1</div>
+                <div class="body"><strong>New domain emails in — no auto-alert to Sales</strong><div class="who">Sales · missed sign-up</div></div>
+              </div>
+              <div class="pain high">
+                <div class="id">P2</div>
+                <div class="body"><strong>Request sits unread for hours/days</strong><div class="who">Customer · Sales · Org</div></div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- STAGE 2 — DUAL -->
+      <div class="dual-row">
+        <div class="stage-num"><span class="dot"></span><span class="lbl">Stage 2</span></div>
+        <div class="dual-lanes">
+
+          <div class="lane lane--portal">
+            <div class="lane-header"><span class="ico">▦</span> Portal Info Gathering</div>
+            <div class="stage-card">
+              <h2>Already complete</h2>
+              <p class="desc">The form <strong>forces completion</strong>. Weight, dims, commodity, dates — all required fields. Zero rounds of back-and-forth.</p>
+              <div class="channel-note"><strong>Portal advantage:</strong> The big email pain (P3 below) doesn't exist here. Clean data straight into WorldTrak.</div>
+            </div>
+            <div class="pains">
+              <div class="pain green">
+                <div class="id">✓</div>
+                <div class="body"><strong>No info-gathering pain on this lane</strong><div class="who">Structured intake wins here</div></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="lane lane--email">
+            <div class="lane-header"><span class="ico">✉</span> Email Info Gathering</div>
+            <div class="stage-card">
+              <h2>~4 emails to assemble the ask</h2>
+              <p class="desc">Op asks customer for weight, dims, commodity, dates — or fills in themselves via inference + OCR plugin. Multiple replies before quoting can start.</p>
+              <div class="meta">Average ~4 emails back and forth</div>
+            </div>
+            <div class="pains">
+              <div class="pain med">
+                <div class="id">P3</div>
+                <div class="body"><strong>4-email back-and-forth before quote starts</strong><div class="who">Customer · Ops · Sales</div></div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- MERGE BAND -->
+      <div class="merge-band">
+        <div class="merge-band-num"></div>
+        <div class="merge-graphic">
+          <svg viewBox="0 0 200 60" xmlns="http://www.w3.org/2000/svg">
+            <line x1="40" y1="6" x2="100" y2="42" stroke="rgba(255,255,255,0.6)" stroke-width="2" stroke-linecap="round" />
+            <line x1="160" y1="6" x2="100" y2="42" stroke="rgba(255,255,255,0.6)" stroke-width="2" stroke-linecap="round" />
+            <line x1="100" y1="42" x2="100" y2="58" stroke="#fff" stroke-width="3" stroke-linecap="round" />
+            <circle cx="40" cy="6" r="5" fill="rgba(109,181,255,0.9)" />
+            <circle cx="160" cy="6" r="5" fill="rgba(245,196,119,0.9)" />
+            <polygon points="100,58 95,48 105,48" fill="#fff" />
+            <text x="40" y="22" fill="rgba(255,255,255,0.7)" font-family="Geist Mono, monospace" font-size="9" font-weight="600" text-anchor="middle">PORTAL</text>
+            <text x="160" y="22" fill="rgba(255,255,255,0.7)" font-family="Geist Mono, monospace" font-size="9" font-weight="600" text-anchor="middle">EMAIL</text>
+          </svg>
+          <div class="label">
+            <strong>Channels converge — Ops begins quote work</strong>
+            <div class="sub">Stage 3 onward: one pipeline, regardless of how the request arrived</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Common pipeline label -->
+      <div class="common-label">Stages 3–7 — common pipeline</div>
+
+      <!-- STAGE 3 -->
+      <div class="stage-row">
+        <div class="stage-num"><span class="dot"></span><span class="lbl">Stage 3</span></div>
+        <div class="stage-card">
+          <h2>Quote Construction</h2>
+          <p class="desc">Outlook → Outlook Plugin → WorldTrak (creates quote skeleton).<br/>
+            <strong>Tariff:</strong> lookup rate on file.<br/>
+            <strong>Non-tariff (65–75%):</strong> 7L lookup, email carrier, or real-time platform (expedite/hotshot).<br/>
+            Apply margin: <strong>percentage</strong>, judged by <strong>historical pattern</strong> (varies operator-to-operator).</p>
+          <div class="meta">Senior op: ~20 min · Junior: longer · 3–4 app switches per quote</div>
+          <div class="channel-note"><strong>Portal-originated quotes:</strong> data flows directly to WT — fewer app switches, but margin work is the same.</div>
+        </div>
+        <div class="pains">
+          <div class="pain med">
+            <div class="id">P4</div>
+            <div class="body"><strong>Margin set by judgment, no historical guidance</strong><div class="who">Org · margin leakage</div></div>
+          </div>
+          <div class="pain med">
+            <div class="id">P5</div>
+            <div class="body"><strong>3–4 app switches, copy-paste between systems</strong><div class="who">Ops productivity · less acute on portal lane</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- STAGE 4 -->
+      <div class="stage-row">
+        <div class="stage-num"><span class="dot"></span><span class="lbl">Stage 4</span></div>
+        <div class="stage-card">
+          <h2>Send Quote</h2>
+          <p class="desc">Reply email — PDF or plain text. <strong>Casual cover</strong>; often just the price. CC: customer team, Sales if requested.</p>
+          <div class="quirk">
+            <strong>⚠ Quirk:</strong> Op creates quote in WorldTrak then <strong>immediately closes it</strong>. Reopens only if customer engages.<br/>
+            → WorldTrak "open" status is <strong>not</strong> a reliable pipeline signal. Dashboard must derive liveness from the email thread or portal events.
+          </div>
+        </div>
+        <div class="pains">
+          <div class="pain high">
+            <div class="id">P6</div>
+            <div class="body"><strong>WorldTrak status doesn't reflect reality</strong><div class="who">Architectural — derive from signals</div></div>
+          </div>
+          <div class="pain med">
+            <div class="id">P7</div>
+            <div class="body"><strong>Casual email; no templating; quality varies</strong><div class="who">Customer experience · auto-template fix on portal lane</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- STAGE 5 -->
+      <div class="stage-row">
+        <div class="stage-num"><span class="dot"></span><span class="lbl">Stage 5</span></div>
+        <div class="stage-card">
+          <h2>Wait for Customer (default)</h2>
+          <p class="desc">Ops tracks open quotes in <strong>head + inbox + WorldTrak</strong>. No standard follow-up cadence. No reminder system. Mental note.</p>
+          <div class="meta">A template exists. Doesn't get used reliably.</div>
+          <div class="channel-note"><strong>Silence detection per channel:</strong> Email → "no reply in N hours." Portal → "customer hasn't viewed quote" OR "viewed 5x, never booked."</div>
+        </div>
+        <div class="pains">
+          <div class="pain crit">
+            <div class="id">P8</div>
+            <div class="body"><strong>No proactive follow-up — quotes die in silence</strong><div class="who">Customer · Sales · Org · HEADLINE PAIN</div></div>
+          </div>
+          <div class="pain high">
+            <div class="id">P9</div>
+            <div class="body"><strong>Tracking is "head + inbox + WT" — no single source</strong><div class="who">Ops cognitive load</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- STAGE 6 -->
+      <div class="stage-row">
+        <div class="stage-num"><span class="dot"></span><span class="lbl">Stage 6</span></div>
+        <div class="stage-card">
+          <h2>Customer Responds (or doesn't)</h2>
+          <p class="desc">Ops reads the email thread or checks the portal → reopens quote in WorldTrak (context reconstruction).</p>
+          <div class="branches">
+            <span class="branch win">ACCEPT → Win path</span>
+            <span class="branch">PUSHBACK → counter (full authority)</span>
+            <span class="branch">QUESTION → investigate</span>
+            <span class="branch">MODIFY → re-quote</span>
+            <span class="branch bad">SILENCE → forgotten</span>
+          </div>
+          <div class="channel-note"><strong>Email-only signals:</strong> P10 and P11 below require text to analyze. Portal-only quotes won't produce these — they need view-count and abandonment metrics instead (P20).</div>
+        </div>
+        <div class="pains">
+          <div class="pain high">
+            <div class="id">P10</div>
+            <div class="body"><strong>Customer questions answered incompletely or not at all</strong><div class="who">Email only · Customer · Sales</div></div>
+          </div>
+          <div class="pain high">
+            <div class="id">P11</div>
+            <div class="body"><strong>Operator promises ("I'll get back Friday") forgotten</strong><div class="who">Email only · Customer trust</div></div>
+          </div>
+          <div class="pain med">
+            <div class="id">P12</div>
+            <div class="body"><strong>Re-quote on modifications — context may be lost</strong><div class="who">Customer · Ops</div></div>
+          </div>
+          <div class="pain med">
+            <div class="id">P20</div>
+            <div class="body"><strong>Portal quote viewed N times, never booked (fence-sitter)</strong><div class="who">Portal only · net-new signal</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- STAGE 7 -->
+      <div class="stage-row">
+        <div class="stage-num"><span class="dot"></span><span class="lbl">Stage 7</span></div>
+        <div class="stage-card">
+          <h2>Resolution</h2>
+          <p class="desc">
+            <strong>Win:</strong> Op infers from email or portal event → converts quote to shipment in WorldTrak.<br/>
+            <strong>Loss:</strong> Op infers from silence or explicit "we went elsewhere." Closes the quote.
+          </p>
+          <div class="quirk">
+            <strong>⚠ No reason recorded.</strong> Sales never learns why anything was lost. The whole product premise traces back to this gap. Portal abandonment also has no reason text.
+          </div>
+        </div>
+        <div class="pains">
+          <div class="pain crit">
+            <div class="id">P13</div>
+            <div class="body"><strong>No win/loss reason captured (either channel)</strong><div class="who">Org · Sales · HEADLINE PAIN</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- OUT OF BAND label -->
+      <div class="common-label" style="margin-top: 24px;">Out of band — applies across all stages</div>
+
+      <!-- STAGE 8 -->
+      <div class="stage-row">
+        <div class="stage-num oob"><span class="dot"></span><span class="lbl">Stage 8 (oob)</span></div>
+        <div class="stage-card oob">
+          <h2>Backup Coverage</h2>
+          <p class="desc">Ops out sick or on vacation → station Teams + Outlook group takes over. Operator confirmed: <strong>"Definitely"</strong> quotes get lost in handoff.</p>
+          <div class="channel-note" style="background: var(--card);"><strong>Portal lane:</strong> shared queue is easier to cover — less of a problem here.</div>
+        </div>
+        <div class="pains">
+          <div class="pain high">
+            <div class="id">P14</div>
+            <div class="body"><strong>Backup handoff drops quotes</strong><div class="who">Email lane · Customer · Org</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- STAGE 9 -->
+      <div class="stage-row">
+        <div class="stage-num oob"><span class="dot"></span><span class="lbl">Stage 9 (oob)</span></div>
+        <div class="stage-card oob">
+          <h2>Sales Asks "What's Happening?"</h2>
+          <p class="desc">Sales rep messages or calls ops: "What's happening with Encore Global?" Op digs through emails to assemble an answer. No standardized briefing.</p>
+          <div class="channel-note" style="background: var(--card);"><strong>Portal lane is worse:</strong> at least with email, Sales can be CC'd. Portal cuts Sales out entirely.</div>
+        </div>
+        <div class="pains">
+          <div class="pain crit">
+            <div class="id">P15</div>
+            <div class="body"><strong>Sales has zero visibility — must ask Ops every time</strong><div class="who">Sales · Ops · HEADLINE PAIN</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ALL STAGES -->
+      <div class="stage-row">
+        <div class="stage-num oob"><span class="dot"></span><span class="lbl">All stages</span></div>
+        <div class="stage-card oob">
+          <h2>Cross-cutting</h2>
+          <p class="desc">Quality varies wildly across operators. Station manager admits "good ones vs bad ones." Sentiment shifts on accounts go unnoticed for months because nobody is reading patterns.</p>
+        </div>
+        <div class="pains">
+          <div class="pain crit">
+            <div class="id">P16</div>
+            <div class="body"><strong>Operator quality variance — known but unquantified</strong><div class="who">Both channels · HEADLINE PAIN</div></div>
+          </div>
+          <div class="pain high">
+            <div class="id">P17</div>
+            <div class="body"><strong>Customer sentiment shifts go unnoticed for months</strong><div class="who">Email only · late warning</div></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Headline pains -->
+    <div class="headline">
+      <h2>The four headline pains</h2>
+      <div class="lede">Anything on the dashboard that doesn't trace to one of these four — or their immediate proof — gets cut. All four apply to <strong>both channels</strong>.</div>
+
+      <div class="headline-grid">
+        <div class="headline-pain">
+          <div class="id">P8 · VERY HIGH</div>
+          <div class="title">No proactive follow-up — quotes die in silence</div>
+          <div class="quote">"Main complaint from management is operators don't or don't know when to proactively follow up."</div>
+          <div class="fix"><strong>Surface:</strong> stale-quote alarms + Nudge action + response-time/win-rate proof. Works on both channels (email silence + portal-view silence)</div>
+        </div>
+
+        <div class="headline-pain">
+          <div class="id">P13 · VERY HIGH</div>
+          <div class="title">No win/loss reason recorded</div>
+          <div class="quote">"When a quote is lost, do they record it anywhere? No. That's why we're building this dashboard."</div>
+          <div class="fix"><strong>Surface:</strong> postmortem on lost quotes — AI extracts from emails. Portal abandonments use form-step + view-pattern as proxy.</div>
+        </div>
+
+        <div class="headline-pain">
+          <div class="id">P15 · VERY HIGH</div>
+          <div class="title">Sales has zero visibility</div>
+          <div class="quote">"Sales rep has no visibility into how and what is handled. It's always he said / she said."</div>
+          <div class="fix"><strong>Surface:</strong> the entire dashboard — every level traces to source emails or portal events.</div>
+        </div>
+
+        <div class="headline-pain">
+          <div class="id">P16 · VERY HIGH</div>
+          <div class="title">Operator quality variance — known but unquantified</div>
+          <div class="quote">"The good ones are on top, the bad ones are not. Like any other business."</div>
+          <div class="fix"><strong>Surface:</strong> operator scorecard scoped to the Sales rep's book — response time, win rate, follow-up rate, unanswered count.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Net-new portal opportunities -->
+    <div class="opps">
+      <h2>Net-new signals (portal-only)</h2>
+      <div class="lede">Signals the portal exposes that don't exist in email-only workflows. These are bonus opportunities the system unlocks.</div>
+      <div class="opps-grid">
+        <div class="opp">
+          <div class="pid">P19 · NEW</div>
+          <div class="title">Form abandonment</div>
+          <div class="desc">"DataCo started a quote 2 days ago, dropped off at Locations step" → Sales call</div>
+        </div>
+        <div class="opp">
+          <div class="pid">P20 · NEW</div>
+          <div class="title">Fence-sitter detection</div>
+          <div class="desc">"Acme viewed Q-1042 five times since Tue, hasn't booked" → high intent, nudge moment</div>
+        </div>
+        <div class="opp">
+          <div class="pid">SIG · NEW</div>
+          <div class="title">New domain registration</div>
+          <div class="desc">"Linda Park at Encore registered for portal" → new decision-maker without email signal</div>
+        </div>
+        <div class="opp">
+          <div class="pid">SIG · NEW</div>
+          <div class="title">Portal usage decline</div>
+          <div class="desc">"Pacific Logistics: 12 sessions last month, 3 this month" → quieter than email frequency drift</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MVP filter -->
+    <div class="filter">
+      <h2>Pains the Sales Rep dashboard addresses (MVP)</h2>
+      <div class="lede">After filtering pains through "does this belong on the Sales-rep view?" — eight survive. Channel coverage matters: BOTH means the surface works for portal and email; EMAIL-ONLY means the surface requires text analysis.</div>
+      <div class="filter-list">
+        <div class="filter-row"><span class="pid">P1</span><span class="pain-name">New domain emailed / registered</span><span class="channel"><span class="both">BOTH</span></span></div>
+        <div class="filter-row"><span class="pid">P6</span><span class="pain-name">Derive quote liveness from signals</span><span class="channel"><span class="both">BOTH · architectural</span></span></div>
+        <div class="filter-row"><span class="pid">P8</span><span class="pain-name">No follow-up · stale quotes</span><span class="channel"><span class="both">BOTH</span></span></div>
+        <div class="filter-row"><span class="pid">P10</span><span class="pain-name">Unanswered customer questions</span><span class="channel"><span class="email-only">EMAIL ONLY</span></span></div>
+        <div class="filter-row"><span class="pid">P11</span><span class="pain-name">Broken operator promises</span><span class="channel"><span class="email-only">EMAIL ONLY</span></span></div>
+        <div class="filter-row"><span class="pid">P13</span><span class="pain-name">No win/loss reason</span><span class="channel"><span class="both">BOTH</span></span></div>
+        <div class="filter-row"><span class="pid">P15</span><span class="pain-name">Sales blindness</span><span class="channel"><span class="both">BOTH</span></span></div>
+        <div class="filter-row"><span class="pid">P16</span><span class="pain-name">Operator variance</span><span class="channel"><span class="both">BOTH</span></span></div>
+        <div class="filter-row"><span class="pid">P19</span><span class="pain-name">Form abandonment</span><span class="channel"><span class="portal-only">PORTAL ONLY</span></span></div>
+        <div class="filter-row"><span class="pid">P20</span><span class="pain-name">Quote-view fence-sitter</span><span class="channel"><span class="portal-only">PORTAL ONLY</span></span></div>
+      </div>
+    </div>
+
+  </div>
+</body>
+</html>
