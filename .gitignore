@@ -16,6 +16,10 @@ build/
 uploads/
 scraps/
 
+# Discovery decks — local reference only, not for public repo
+*.pptx
+*.pdf
+
 # Memory / Claude artifacts
 memory/
 
